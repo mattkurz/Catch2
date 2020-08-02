@@ -89,6 +89,12 @@ namespace Catch {
             return *this;
         }
 
+        Column::iterator Column::iterator::operator++(int) {
+            iterator prev(*this);
+            operator++();
+            return prev;
+        }
+
         std::ostream& operator<<(std::ostream& os, Column const& col) {
             bool first = true;
             for (auto line : col) {
@@ -129,5 +135,16 @@ namespace Catch {
             return cols;
         }
 
-    } // namespace TextFlow
+        Columns& Columns::operator+=(Column const& col) {
+            m_columns.push_back(col);
+            return *this;
+        }
+
+        Columns Columns::operator+(Column const& col) {
+            Columns combined = *this;
+            combined += col;
+            return combined;
+        }
+
+} // namespace TextFlow
 } // namespace Catch

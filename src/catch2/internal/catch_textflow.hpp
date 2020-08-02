@@ -75,11 +75,7 @@ public:
 		}
 
 		iterator& operator++();
-		auto operator ++(int) -> iterator {
-			iterator prev(*this);
-			operator++();
-			return prev;
-		}
+		iterator operator++(int);
 
 		auto operator ==(iterator const& other) const -> bool {
 			return
@@ -109,11 +105,11 @@ public:
 		return *this;
 	}
 
-	size_t width() const { return m_width; }
-	iterator begin() const { return iterator(*this); }
-	iterator end() const { return { *this, m_strings.size() }; }
+    size_t width() const { return m_width; }
+    iterator begin() const { return iterator( *this ); }
+    iterator end() const { return { *this, m_strings.size() }; }
 
-	friend std::ostream& operator << (std::ostream& os, Column const& col);
+	friend std::ostream& operator<<( std::ostream& os, Column const& col );
 
 	Columns operator + (Column const& other);
 };
@@ -183,14 +179,14 @@ public:
 			}
 			return row;
 		}
-		auto operator ++() -> iterator& {
+		iterator& operator++() {
 			for (size_t i = 0; i < m_columns.size(); ++i) {
 				if (m_iterators[i] != m_columns[i].end())
 					++m_iterators[i];
 			}
 			return *this;
 		}
-		auto operator ++(int) -> iterator {
+		iterator operator++(int) {
 			iterator prev(*this);
 			operator++();
 			return prev;
@@ -201,15 +197,8 @@ public:
 	iterator begin() const { return iterator(*this); }
 	iterator end() const { return { *this, iterator::EndTag() }; }
 
-	auto operator += (Column const& col) -> Columns& {
-		m_columns.push_back(col);
-		return *this;
-	}
-	auto operator + (Column const& col) -> Columns {
-		Columns combined = *this;
-		combined += col;
-		return combined;
-	}
+	Columns& operator+= (Column const& col);
+	Columns operator+ (Column const& col);
 
 	friend std::ostream& operator<< (std::ostream& os, Columns const& cols);
 };
