@@ -118,13 +118,7 @@ public:
 	Columns operator + (Column const& other);
 };
 
-//FIXME: This could probably be just a named free function
-class Spacer : public Column {
-public:
-	explicit Spacer(size_t spaceWidth) : Column("") {
-		width(spaceWidth);
-	}
-};
+Column Spacer( size_t spaceWidth );
 
 class Columns {
 	std::vector<Column> m_columns;

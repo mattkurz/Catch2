@@ -298,7 +298,7 @@ public:
             *this << RowBreak();
 
 			TextFlow::Columns headerCols;
-			TextFlow::Spacer spacer(2);
+			auto spacer = TextFlow::Spacer(2);
 			for (auto const& info : m_columnInfos) {
 				headerCols += TextFlow::Column(info.name).width(static_cast<std::size_t>(info.width - 2));
 				headerCols += spacer;

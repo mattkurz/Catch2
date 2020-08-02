@@ -100,6 +100,12 @@ namespace Catch {
             return os;
         }
 
+        Column Spacer( size_t spaceWidth ) {
+            Column ret{ "" };
+            ret.width( spaceWidth );
+            return ret;
+        }
+
         std::ostream& operator<<(std::ostream& os, Columns const& cols) {
             bool first = true;
             for (auto line : cols) {
