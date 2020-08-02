@@ -1,38 +1,22 @@
 #ifndef CATCH_CLARA_TEXTFLOW_HPP_INCLUDED
 #define CATCH_CLARA_TEXTFLOW_HPP_INCLUDED
 
-#include <cstring>
-#include <cassert>
-#include <ostream>
-#include <sstream>
-#include <vector>
+#include <catch2/internal/catch_console_width.hpp>
 
-#ifndef CATCH_CLARA_TEXTFLOW_CONFIG_CONSOLE_WIDTH
-#define CATCH_CLARA_TEXTFLOW_CONFIG_CONSOLE_WIDTH 80
-#endif
+#include <cassert>
+#include <string>
+#include <vector>
 
 
 namespace Catch {
 namespace TextFlow {
 
-inline auto isWhitespace(char c) -> bool {
-	static const char chars[] = " \t\n\r";
-	return std::memchr(chars, c, sizeof(chars) - 1) != nullptr;
-}
-inline auto isBreakableBefore(char c) -> bool {
-	static const char chars[] = "[({<|";
-	return std::memchr(chars, c, sizeof(chars) - 1) != nullptr;
-}
-inline auto isBreakableAfter(char c) -> bool {
-	static const char chars[] = "])}>.,:;*+-=&/\\";
-	return std::memchr(chars, c, sizeof(chars) - 1) != nullptr;
-}
-
 class Columns;
 
+// Fixme: why vector of strings??
 class Column {
 	std::vector<std::string> m_strings;
-	size_t m_width = CATCH_CLARA_TEXTFLOW_CONFIG_CONSOLE_WIDTH;
+	size_t m_width = CATCH_CONFIG_CONSOLE_WIDTH - 1;
 	size_t m_indent = 0;
 	size_t m_initialIndent = std::string::npos;
 
@@ -52,52 +36,18 @@ public:
 			: m_column(column),
 			m_stringIndex(stringIndex) {}
 
-		auto line() const -> std::string const& { return m_column.m_strings[m_stringIndex]; }
+		std::string const& line() const {
+            return m_column.m_strings[m_stringIndex];
+        }
 
-		auto isBoundary(size_t at) const -> bool {
-			assert(at > 0);
-			assert(at <= line().size());
-
-			return at == line().size() ||
-				(isWhitespace(line()[at]) && !isWhitespace(line()[at - 1])) ||
-				isBreakableBefore(line()[at]) ||
-				isBreakableAfter(line()[at - 1]);
-		}
-
-		void calcLength() {
-			assert(m_stringIndex < m_column.m_strings.size());
-
-			m_suffix = false;
-			auto width = m_column.m_width - indent();
-			m_end = m_pos;
-			if (line()[m_pos] == '\n') {
-				++m_end;
-			}
-			while (m_end < line().size() && line()[m_end] != '\n')
-				++m_end;
-
-			if (m_end < m_pos + width) {
-				m_len = m_end - m_pos;
-			} else {
-				size_t len = width;
-				while (len > 0 && !isBoundary(m_pos + len))
-					--len;
-				while (len > 0 && isWhitespace(line()[m_pos + len - 1]))
-					--len;
-
-				if (len > 0) {
-					m_len = len;
-				} else {
-					m_suffix = true;
-					m_len = width - 1;
-				}
-			}
-		}
+		void calcLength();
 
 		auto indent() const -> size_t {
-			auto initial = m_pos == 0 && m_stringIndex == 0 ? m_column.m_initialIndent : std::string::npos;
-			return initial == std::string::npos ? m_column.m_indent : initial;
-		}
+            auto initial = m_pos == 0 && m_stringIndex == 0
+                               ? m_column.m_initialIndent
+                               : std::string::npos;
+            return initial == std::string::npos ? m_column.m_indent : initial;
+        }
 
 		auto addIndentAndSuffix(std::string const &plain) const -> std::string {
 			return std::string(indent(), ' ') + (m_suffix ? plain + "-" : plain);
@@ -124,22 +74,7 @@ public:
 			return addIndentAndSuffix(line().substr(m_pos, m_len));
 		}
 
-		auto operator ++() -> iterator& {
-			m_pos += m_len;
-			if (m_pos < line().size() && line()[m_pos] == '\n')
-				m_pos += 1;
-			else
-				while (m_pos < line().size() && isWhitespace(line()[m_pos]))
-					++m_pos;
-
-			if (m_pos == line().size()) {
-				m_pos = 0;
-				++m_stringIndex;
-			}
-			if (m_stringIndex < m_column.m_strings.size())
-				calcLength();
-			return *this;
-		}
+		iterator& operator++();
 		auto operator ++(int) -> iterator {
 			iterator prev(*this);
 			operator++();
@@ -174,33 +109,17 @@ public:
 		return *this;
 	}
 
-	auto width() const -> size_t { return m_width; }
-	auto begin() const -> iterator { return iterator(*this); }
-	auto end() const -> iterator { return { *this, m_strings.size() }; }
+	size_t width() const { return m_width; }
+	iterator begin() const { return iterator(*this); }
+	iterator end() const { return { *this, m_strings.size() }; }
 
-	inline friend std::ostream& operator << (std::ostream& os, Column const& col) {
-		bool first = true;
-		for (auto line : col) {
-			if (first)
-				first = false;
-			else
-				os << "\n";
-			os << line;
-		}
-		return os;
-	}
+	friend std::ostream& operator << (std::ostream& os, Column const& col);
 
-	auto operator + (Column const& other)->Columns;
-
-	auto toString() const -> std::string {
-		std::ostringstream oss;
-		oss << *this;
-		return oss.str();
-	}
+	Columns operator + (Column const& other);
 };
 
+//FIXME: This could probably be just a named free function
 class Spacer : public Column {
-
 public:
 	explicit Spacer(size_t spaceWidth) : Column("") {
 		width(spaceWidth);
@@ -284,8 +203,8 @@ public:
 	};
 	using const_iterator = iterator;
 
-	auto begin() const -> iterator { return iterator(*this); }
-	auto end() const -> iterator { return { *this, iterator::EndTag() }; }
+	iterator begin() const { return iterator(*this); }
+	iterator end() const { return { *this, iterator::EndTag() }; }
 
 	auto operator += (Column const& col) -> Columns& {
 		m_columns.push_back(col);
@@ -297,32 +216,9 @@ public:
 		return combined;
 	}
 
-	inline friend std::ostream& operator << (std::ostream& os, Columns const& cols) {
-
-		bool first = true;
-		for (auto line : cols) {
-			if (first)
-				first = false;
-			else
-				os << "\n";
-			os << line;
-		}
-		return os;
-	}
-
-	auto toString() const -> std::string {
-		std::ostringstream oss;
-		oss << *this;
-		return oss.str();
-	}
+	friend std::ostream& operator<< (std::ostream& os, Columns const& cols);
 };
 
-inline auto Column::operator + (Column const& other) -> Columns {
-	Columns cols;
-	cols += *this;
-	cols += other;
-	return cols;
-}
 }
 }
 #endif // CATCH_CLARA_TEXTFLOW_HPP_INCLUDED

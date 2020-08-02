@@ -37,6 +37,8 @@
 #include <memory>
 #include <set>
 #include <algorithm>
+#include <ostream>
+#include <sstream>
 
 #if !defined(CATCH_PLATFORM_WINDOWS) && ( defined(WIN32) || defined(__WIN32__) || defined(_WIN32) || defined(_MSC_VER) )
 #define CATCH_PLATFORM_WINDOWS
@@ -648,7 +650,7 @@ namespace detail {
                 oss << opt;
             }
             if( !m_hint.empty() )
-                oss << " <" << m_hint << ">";
+                oss << " <" << m_hint << '>';
             return { { oss.str(), m_description } };
         }
 
@@ -781,26 +783,26 @@ namespace detail {
 
         void writeToStream( std::ostream &os ) const {
             if (!m_exeName.name().empty()) {
-                os << "usage:\n" << "  " << m_exeName.name() << " ";
+                os << "usage:\n" << "  " << m_exeName.name() << ' ';
                 bool required = true, first = true;
                 for( auto const &arg : m_args ) {
                     if (first)
                         first = false;
                     else
-                        os << " ";
+                        os << ' ';
                     if( arg.isOptional() && required ) {
-                        os << "[";
+                        os << '[';
                         required = false;
                     }
-                    os << "<" << arg.hint() << ">";
+                    os << '<' << arg.hint() << '>';
                     if( arg.cardinality() == 0 )
                         os << " ... ";
                 }
                 if( !required )
-                    os << "]";
+                    os << ']';
                 if( !m_options.empty() )
                     os << " options";
-                os << "\n\nwhere options are:" << std::endl;
+                os << "\n\nwhere options are:\n";
             }
 
             auto rows = getHelpColumns();
@@ -816,7 +818,7 @@ namespace detail {
                         TextFlow::Column( cols.left ).width( optWidth ).indent( 2 ) +
                         TextFlow::Spacer(4) +
                         TextFlow::Column( cols.right ).width( consoleWidth - 7 - optWidth );
-                os << row << std::endl;
+                os << row << '\n';
             }
         }
 
