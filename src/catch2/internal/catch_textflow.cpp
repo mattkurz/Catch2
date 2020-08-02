@@ -39,10 +39,11 @@ namespace Catch {
             m_suffix = false;
             auto width = m_column.m_width - indent();
             m_end = m_pos;
-            if ( line()[m_pos] == '\n' ) {
+            std::string const& current_line = line();
+            if ( current_line[m_pos] == '\n' ) {
                 ++m_end;
             }
-            while ( m_end < line().size() && line()[m_end] != '\n' ) {
+            while ( m_end < current_line.size() && current_line[m_end] != '\n' ) {
                 ++m_end;
             }
 
@@ -50,10 +51,10 @@ namespace Catch {
                 m_len = m_end - m_pos;
             } else {
                 size_t len = width;
-                while ( len > 0 && !isBoundary( line(), m_pos + len ) ) {
+                while ( len > 0 && !isBoundary( current_line, m_pos + len ) ) {
                     --len;
                 }
-                while ( len > 0 && isWhitespace( line()[m_pos + len - 1] ) ) {
+                while ( len > 0 && isWhitespace( current_line[m_pos + len - 1] ) ) {
                     --len;
                 }
 
@@ -68,16 +69,17 @@ namespace Catch {
 
         Column::iterator& Column::iterator::operator++() {
             m_pos += m_len;
-            if ( m_pos < line().size() && line()[m_pos] == '\n' ) {
+            std::string const& current_line = line();
+            if ( m_pos < current_line.size() && current_line[m_pos] == '\n' ) {
                 m_pos += 1;
             } else {
-                while ( m_pos < line().size() &&
-                        isWhitespace( line()[m_pos] ) ) {
+                while ( m_pos < current_line.size() &&
+                        isWhitespace( current_line[m_pos] ) ) {
                     ++m_pos;
                 }
             }
 
-            if ( m_pos == line().size() ) {
+            if ( m_pos == current_line.size() ) {
                 m_pos = 0;
                 ++m_stringIndex;
             }
