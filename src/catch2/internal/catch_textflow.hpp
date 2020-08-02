@@ -118,6 +118,7 @@ public:
 	Columns operator + (Column const& other);
 };
 
+//! Creates a column that serves as an empty space of specific width
 Column Spacer( size_t spaceWidth );
 
 class Columns {
