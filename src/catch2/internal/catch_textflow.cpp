@@ -34,12 +34,12 @@ namespace Catch {
     namespace TextFlow {
 
         void Column::iterator::calcLength() {
-            assert( m_stringIndex < m_column.m_strings.size() );
+            assert(!m_stringEnded);
 
             m_suffix = false;
             auto width = m_column.m_width - indent();
             m_end = m_pos;
-            std::string const& current_line = line();
+            std::string const& current_line = m_column.m_string;
             if ( current_line[m_pos] == '\n' ) {
                 ++m_end;
             }
@@ -69,7 +69,7 @@ namespace Catch {
 
         Column::iterator& Column::iterator::operator++() {
             m_pos += m_len;
-            std::string const& current_line = line();
+            std::string const& current_line = m_column.m_string;
             if ( m_pos < current_line.size() && current_line[m_pos] == '\n' ) {
                 m_pos += 1;
             } else {
@@ -81,9 +81,9 @@ namespace Catch {
 
             if ( m_pos == current_line.size() ) {
                 m_pos = 0;
-                ++m_stringIndex;
+                m_stringEnded = true;
             }
-            if ( m_stringIndex < m_column.m_strings.size() ) {
+            if (!m_stringEnded) {
                 calcLength();
             }
             return *this;

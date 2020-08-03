@@ -13,9 +13,8 @@ namespace TextFlow {
 
 class Columns;
 
-// Fixme: why vector of strings??
 class Column {
-	std::vector<std::string> m_strings;
+	std::string m_string;
 	size_t m_width = CATCH_CONFIG_CONSOLE_WIDTH - 1;
 	size_t m_indent = 0;
 	size_t m_initialIndent = std::string::npos;
@@ -24,26 +23,24 @@ public:
 	class iterator {
 		friend Column;
 
+		struct EndTag {};
+
 		Column const& m_column;
-		size_t m_stringIndex = 0;
+		bool m_stringEnded = false;
 		size_t m_pos = 0;
 
 		size_t m_len = 0;
 		size_t m_end = 0;
 		bool m_suffix = false;
 
-		iterator(Column const& column, size_t stringIndex)
+		iterator(Column const& column, EndTag)
 			: m_column(column),
-			m_stringIndex(stringIndex) {}
-
-		std::string const& line() const {
-            return m_column.m_strings[m_stringIndex];
-        }
+			m_stringEnded(true) {}
 
 		void calcLength();
 
 		auto indent() const -> size_t {
-            auto initial = m_pos == 0 && m_stringIndex == 0
+            auto initial = m_pos == 0 && !m_stringEnded
                                ? m_column.m_initialIndent
                                : std::string::npos;
             return initial == std::string::npos ? m_column.m_indent : initial;
@@ -64,14 +61,15 @@ public:
 			assert(m_column.m_width > m_column.m_indent);
 			assert(m_column.m_initialIndent == std::string::npos || m_column.m_width > m_column.m_initialIndent);
 			calcLength();
-			if (m_len == 0)
-				m_stringIndex++; // Empty string
+			if (m_len == 0) {
+				m_stringEnded = true;
+			}
 		}
 
 		auto operator *() const -> std::string {
-			assert(m_stringIndex < m_column.m_strings.size());
+			assert(!m_stringEnded);
 			assert(m_pos <= m_end);
-			return addIndentAndSuffix(line().substr(m_pos, m_len));
+			return addIndentAndSuffix(m_column.m_string.substr(m_pos, m_len));
 		}
 
 		iterator& operator++();
@@ -80,7 +78,7 @@ public:
 		auto operator ==(iterator const& other) const -> bool {
 			return
 				m_pos == other.m_pos &&
-				m_stringIndex == other.m_stringIndex &&
+				m_stringEnded == other.m_stringEnded &&
 				&m_column == &other.m_column;
 		}
 		auto operator !=(iterator const& other) const -> bool {
@@ -89,7 +87,7 @@ public:
 	};
 	using const_iterator = iterator;
 
-	explicit Column(std::string const& text) { m_strings.push_back(text); }
+	explicit Column( std::string const& text ): m_string( text ) {}
 
 	auto width(size_t newWidth) -> Column& {
 		assert(newWidth > 0);
@@ -107,7 +105,7 @@ public:
 
     size_t width() const { return m_width; }
     iterator begin() const { return iterator( *this ); }
-    iterator end() const { return { *this, m_strings.size() }; }
+	iterator end() const { return { *this, iterator::EndTag{} }; }
 
 	friend std::ostream& operator<<( std::ostream& os, Column const& col );
 
