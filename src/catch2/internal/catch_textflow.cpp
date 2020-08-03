@@ -114,6 +114,26 @@ namespace Catch {
             return ret;
         }
 
+        std::string Columns::iterator::operator*() const {
+            std::string row, padding;
+
+            for ( size_t i = 0; i < m_columns.size(); ++i ) {
+                auto width = m_columns[i].width();
+                if ( m_iterators[i] != m_columns[i].end() ) {
+                    std::string col = *m_iterators[i];
+                    row += padding + col;
+                    if ( col.size() < width )
+                        padding = std::string( width - col.size(), ' ' );
+                    else
+                        padding = "";
+                } else {
+                    padding += std::string( width, ' ' );
+                }
+            }
+            return row;
+        }
+
+
         std::ostream& operator<<(std::ostream& os, Columns const& cols) {
             bool first = true;
             for (auto line : cols) {

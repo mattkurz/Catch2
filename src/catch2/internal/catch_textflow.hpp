@@ -46,7 +46,7 @@ public:
             return initial == std::string::npos ? m_column.m_indent : initial;
         }
 
-		auto addIndentAndSuffix(std::string const &plain) const -> std::string {
+		std::string addIndentAndSuffix(std::string const& plain) const {
 			return std::string(indent(), ' ') + (m_suffix ? plain + "-" : plain);
 		}
 
@@ -159,24 +159,7 @@ public:
 		auto operator !=(iterator const& other) const -> bool {
 			return m_iterators != other.m_iterators;
 		}
-		auto operator *() const -> std::string {
-			std::string row, padding;
-
-			for (size_t i = 0; i < m_columns.size(); ++i) {
-				auto width = m_columns[i].width();
-				if (m_iterators[i] != m_columns[i].end()) {
-					std::string col = *m_iterators[i];
-					row += padding + col;
-					if (col.size() < width)
-						padding = std::string(width - col.size(), ' ');
-					else
-						padding = "";
-				} else {
-					padding += std::string(width, ' ');
-				}
-			}
-			return row;
-		}
+		std::string operator*() const;
 		iterator& operator++() {
 			for (size_t i = 0; i < m_columns.size(); ++i) {
 				if (m_iterators[i] != m_columns[i].end())
