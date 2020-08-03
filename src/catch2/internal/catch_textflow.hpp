@@ -37,13 +37,12 @@ public:
 
 		void calcLength();
 
-        size_t indent() const {
-            auto initial =
-                m_pos == 0 ? m_column.m_initialIndent : std::string::npos;
-            return initial == std::string::npos ? m_column.m_indent : initial;
-        }
+		// Returns current indention width
+		size_t indent() const;
 
-		std::string addIndentAndSuffix(std::string const& plain) const;
+		// Creates an indented and (optionally) suffixed string from
+		// current iterator position, indentation and length.
+		std::string addIndentAndSuffix(size_t position, size_t length) const;
 
 	public:
 		using difference_type = std::ptrdiff_t;
@@ -54,10 +53,7 @@ public:
 
 		explicit iterator(Column const& column);
 
-		auto operator *() const -> std::string {
-			assert(m_pos <= m_end);
-			return addIndentAndSuffix(m_column.m_string.substr(m_pos, m_len));
-		}
+		std::string operator*() const;
 
 		iterator& operator++();
 		iterator operator++(int);
@@ -73,16 +69,16 @@ public:
 
 	explicit Column( std::string const& text ): m_string( text ) {}
 
-	auto width(size_t newWidth) -> Column& {
+	Column& width(size_t newWidth) {
 		assert(newWidth > 0);
 		m_width = newWidth;
 		return *this;
 	}
-	auto indent(size_t newIndent) -> Column& {
+	Column& indent(size_t newIndent) {
 		m_indent = newIndent;
 		return *this;
 	}
-	auto initialIndent(size_t newIndent) -> Column& {
+	Column& initialIndent(size_t newIndent) {
 		m_initialIndent = newIndent;
 		return *this;
 	}
@@ -112,14 +108,7 @@ public:
 		std::vector<Column::iterator> m_iterators;
 		size_t m_activeIterators;
 
-		iterator(Columns const& columns, EndTag)
-			: m_columns(columns.m_columns),
-			m_activeIterators(0) {
-			m_iterators.reserve(m_columns.size());
-
-			for (auto const& col : m_columns)
-				m_iterators.push_back(col.end());
-		}
+		iterator(Columns const& columns, EndTag);
 
 	public:
 		using difference_type = std::ptrdiff_t;
@@ -144,18 +133,8 @@ public:
 			return m_iterators != other.m_iterators;
 		}
 		std::string operator*() const;
-		iterator& operator++() {
-			for (size_t i = 0; i < m_columns.size(); ++i) {
-				if (m_iterators[i] != m_columns[i].end())
-					++m_iterators[i];
-			}
-			return *this;
-		}
-		iterator operator++(int) {
-			iterator prev(*this);
-			operator++();
-			return prev;
-		}
+		iterator& operator++();
+		iterator operator++(int);
 	};
 	using const_iterator = iterator;
 

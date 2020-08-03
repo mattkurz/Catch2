@@ -65,12 +65,18 @@ namespace Catch {
             }
         }
 
-        std::string Column::iterator::addIndentAndSuffix(std::string const& plain) const {
+        size_t Column::iterator::indent() const {
+            auto initial =
+                m_pos == 0 ? m_column.m_initialIndent : std::string::npos;
+            return initial == std::string::npos ? m_column.m_indent : initial;
+        }
+
+        std::string Column::iterator::addIndentAndSuffix(size_t position, size_t length) const {
             std::string ret;
             const auto desired_indent = indent();
-            ret.reserve(desired_indent + plain.size() + m_suffix);
+            ret.reserve(desired_indent + length + m_suffix);
             ret.append(desired_indent, ' ');
-            ret.append(plain);
+            ret.append(m_column.m_string, position, length);
             if (m_suffix) {
                 ret.push_back('-');
             }
@@ -86,6 +92,11 @@ namespace Catch {
             if ( m_len == 0 ) {
                 m_pos = m_column.m_string.size();
             }
+        }
+
+        std::string Column::iterator::operator*() const {
+            assert(m_pos <= m_end);
+            return addIndentAndSuffix(m_pos, m_len);
         }
 
         Column::iterator& Column::iterator::operator++() {
@@ -131,6 +142,15 @@ namespace Catch {
             return ret;
         }
 
+        Columns::iterator::iterator( Columns const& columns, EndTag ):
+            m_columns( columns.m_columns ), m_activeIterators( 0 ) {
+            m_iterators.reserve( m_columns.size() );
+
+            for ( auto const& col : m_columns ) {
+                m_iterators.push_back( col.end() );
+            }
+        }
+
         std::string Columns::iterator::operator*() const {
             std::string row, padding;
 
@@ -139,15 +159,31 @@ namespace Catch {
                 if ( m_iterators[i] != m_columns[i].end() ) {
                     std::string col = *m_iterators[i];
                     row += padding + col;
-                    if ( col.size() < width )
-                        padding = std::string( width - col.size(), ' ' );
-                    else
-                        padding = "";
+                    if (col.size() < width) {
+                        padding = std::string(width - col.size(), ' ');
+                    } else {
+                        padding.clear();
+                    }
                 } else {
                     padding += std::string( width, ' ' );
                 }
             }
             return row;
+        }
+
+        Columns::iterator& Columns::iterator::operator++() {
+            for ( size_t i = 0; i < m_columns.size(); ++i ) {
+                if ( m_iterators[i] != m_columns[i].end() ) {
+                    ++m_iterators[i];
+                }
+            }
+            return *this;
+        }
+
+        Columns::iterator Columns::iterator::operator++(int) {
+            iterator prev(*this);
+            operator++();
+            return prev;
         }
 
 
