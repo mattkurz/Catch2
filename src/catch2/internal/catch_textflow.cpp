@@ -34,8 +34,6 @@ namespace Catch {
     namespace TextFlow {
 
         void Column::iterator::calcLength() {
-            assert(!m_stringEnded);
-
             m_suffix = false;
             auto width = m_column.m_width - indent();
             m_end = m_pos;
@@ -67,6 +65,29 @@ namespace Catch {
             }
         }
 
+        std::string Column::iterator::addIndentAndSuffix(std::string const& plain) const {
+            std::string ret;
+            const auto desired_indent = indent();
+            ret.reserve(desired_indent + plain.size() + m_suffix);
+            ret.append(desired_indent, ' ');
+            ret.append(plain);
+            if (m_suffix) {
+                ret.push_back('-');
+            }
+
+            return ret;
+        }
+
+        Column::iterator::iterator( Column const& column ): m_column( column ) {
+            assert( m_column.m_width > m_column.m_indent );
+            assert( m_column.m_initialIndent == std::string::npos ||
+                    m_column.m_width > m_column.m_initialIndent );
+            calcLength();
+            if ( m_len == 0 ) {
+                m_pos = m_column.m_string.size();
+            }
+        }
+
         Column::iterator& Column::iterator::operator++() {
             m_pos += m_len;
             std::string const& current_line = m_column.m_string;
@@ -79,11 +100,7 @@ namespace Catch {
                 }
             }
 
-            if ( m_pos == current_line.size() ) {
-                m_pos = 0;
-                m_stringEnded = true;
-            }
-            if (!m_stringEnded) {
+            if ( m_pos != current_line.size() ) {
                 calcLength();
             }
             return *this;

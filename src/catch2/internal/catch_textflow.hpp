@@ -26,29 +26,24 @@ public:
 		struct EndTag {};
 
 		Column const& m_column;
-		bool m_stringEnded = false;
 		size_t m_pos = 0;
 
 		size_t m_len = 0;
 		size_t m_end = 0;
 		bool m_suffix = false;
 
-		iterator(Column const& column, EndTag)
-			: m_column(column),
-			m_stringEnded(true) {}
+        iterator( Column const& column, EndTag ):
+            m_column( column ), m_pos( m_column.m_string.size() ) {}
 
 		void calcLength();
 
-		auto indent() const -> size_t {
-            auto initial = m_pos == 0 && !m_stringEnded
-                               ? m_column.m_initialIndent
-                               : std::string::npos;
+        size_t indent() const {
+            auto initial =
+                m_pos == 0 ? m_column.m_initialIndent : std::string::npos;
             return initial == std::string::npos ? m_column.m_indent : initial;
         }
 
-		std::string addIndentAndSuffix(std::string const& plain) const {
-			return std::string(indent(), ' ') + (m_suffix ? plain + "-" : plain);
-		}
+		std::string addIndentAndSuffix(std::string const& plain) const;
 
 	public:
 		using difference_type = std::ptrdiff_t;
@@ -57,17 +52,9 @@ public:
 		using reference = value_type & ;
 		using iterator_category = std::forward_iterator_tag;
 
-		explicit iterator(Column const& column) : m_column(column) {
-			assert(m_column.m_width > m_column.m_indent);
-			assert(m_column.m_initialIndent == std::string::npos || m_column.m_width > m_column.m_initialIndent);
-			calcLength();
-			if (m_len == 0) {
-				m_stringEnded = true;
-			}
-		}
+		explicit iterator(Column const& column);
 
 		auto operator *() const -> std::string {
-			assert(!m_stringEnded);
 			assert(m_pos <= m_end);
 			return addIndentAndSuffix(m_column.m_string.substr(m_pos, m_len));
 		}
@@ -75,15 +62,12 @@ public:
 		iterator& operator++();
 		iterator operator++(int);
 
-		auto operator ==(iterator const& other) const -> bool {
-			return
-				m_pos == other.m_pos &&
-				m_stringEnded == other.m_stringEnded &&
-				&m_column == &other.m_column;
-		}
-		auto operator !=(iterator const& other) const -> bool {
-			return !operator==(other);
-		}
+        bool operator==( iterator const& other ) const {
+            return m_pos == other.m_pos && &m_column == &other.m_column;
+        }
+        bool operator!=( iterator const& other ) const {
+            return !operator==( other );
+        }
 	};
 	using const_iterator = iterator;
 
